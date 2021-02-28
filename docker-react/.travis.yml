@@ -1,0 +1,29 @@
+sudo: required
+language: generic
+services:
+  - docker
+
+before_install:
+  - docker build -t lucasfrsi/docker-react -f Dockerfile.dev .
+
+script:
+  #- docker run lucasfrsi/docker-react npm run test -- --coverage
+  - docker run -e CI=true lucasfrsi/docker-react npm run test -- --coverage
+
+deploy:
+  provider: elasticbeanstalk
+  # The link AWS provides contains the region, check in case
+  region: "sa-east-1"
+  # AWS Application Name
+  app: "docker-react"
+  # AWS Environment Name
+  env: "Dockerreact-env"
+  # Services -> S3 -> Buckets
+  bucket_name: "elasticbeanstalk-sa-east-1-671673325806"
+  # Use AWS App Name (when first created it doesn't create a folder)
+  bucket_path: "docker-react"
+  # Anytime you push code to master, deploy
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY

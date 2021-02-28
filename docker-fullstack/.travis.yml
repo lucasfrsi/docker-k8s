@@ -1,0 +1,38 @@
+sudo: required
+language: generic
+
+services:
+  - docker
+
+before_install:
+  - docker build -t lucasfrsi/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true lucasfrsi/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t lucasfrsi/multi-client ./client
+  - docker build -t lucasfrsi/multi-nginx ./nginx
+  - docker build -t lucasfrsi/multi-server ./server
+  - docker build -t lucasfrsi/multi-worker ./worker
+  # Log in to the Docker CLI
+  # - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin docker.io
+  # Scape special characters in password
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those Images and push them to Docker Hub
+  - docker push lucasfrsi/multi-server
+  - docker push lucasfrsi/multi-worker
+  - docker push lucasfrsi/multi-nginx
+  - docker push lucasfrsi/multi-client
+
+deploy:
+  provider: elasticbeanstalk
+  region: sa-east-1
+  app: multi-docker
+  env: Multidocker-env
+  bucket_name: elasticbeanstalk-sa-east-1-671673325806
+  bucket_path: docker-multi
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
